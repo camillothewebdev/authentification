@@ -157,6 +157,10 @@ app.get("/welcome.html", authMiddleware, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "welcome.html"));
 });
 
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
 app.listen(PORT, () =>
   console.log(`Serveur lancé sur http://localhost:${PORT}`)
 );
