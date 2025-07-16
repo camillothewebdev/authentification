@@ -82,7 +82,7 @@ app.get("/wake-up", async (req, res) => {
   return res.json({ text: "i am awake" });
 });
 
-app.post("/send-otp", async (req, res) => {
+app.post("/send-code", async (req, res) => {
   const { number } = req.body;
   if (!number) return res.json({ error: "Numéro requis" });
 
@@ -111,7 +111,7 @@ app.post("/send-otp", async (req, res) => {
   }
 });
 
-app.post("/verify-otp", (req, res) => {
+app.post("/verify-code", (req, res) => {
   const { number, otp } = req.body;
   if (!number || !otp) return res.json({ error: "Numéro et Code sont requis" });
 

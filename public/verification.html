@@ -27,7 +27,7 @@
         }
         document.getElementById("msg");
         msg.textContent = "Veuillez patienter ...";
-        const res = await fetch("/verify-otp", {
+        const res = await fetch("/verify-code", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ number, otp }),
