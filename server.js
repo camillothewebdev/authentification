@@ -63,7 +63,6 @@ async function demarrerBaileys() {
     if (connection === "close") {
       console.log("Connexion fermée. Reconnexion :", connectedToWhatsapp);
       if (!connectedToWhatsapp) {
-        fs.rmSync("auth_info", { recursive: true, force: true });
         await demarrerBaileys();
       } else {
         console.log("❌ Auth échouée. Rescanner QR manuellement.");
