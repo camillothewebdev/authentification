@@ -8,6 +8,7 @@ const {
   useMultiFileAuthState,
   fetchLatestBaileysVersion,
 } = require("@whiskeysockets/baileys");
+const fs = require("fs");
 
 const app = express();
 app.use(express.json());
@@ -15,10 +16,10 @@ app.use(cookieParser());
 
 const sessions = {};
 const otpStore = {};
-const OTP_EXPIRY_MS = 2 * 60 * 1000; // 2 minutes
+const OTP_EXPIRY_MS = 2 * 60 * 1000;
 const PORT = 3000;
+let connectedToWhatsapp = false;
 
-// Bloquer accès à index.html et verification.html pour les utilisateurs connectés
 app.use((req, res, next) => {
   const sessionId = req.cookies.sessionId;
   const loggedIn = sessionId && sessions[sessionId];
@@ -36,6 +37,8 @@ app.use((req, res, next) => {
 app.use(express.static("public"));
 
 let sock;
+let latestQr = null;
+
 async function demarrerBaileys() {
   const { state, saveCreds } = await useMultiFileAuthState("auth_info");
   const { version } = await fetchLatestBaileysVersion();
@@ -47,24 +50,23 @@ async function demarrerBaileys() {
     const { connection, lastDisconnect, qr } = update;
 
     if (qr) {
+      latestQr = qr;
       console.log("Scannez ce QR code avec WhatsApp :");
       console.log(await qrcode.toString(qr, { small: true }));
     }
 
     if (connection === "open") {
       console.log("✅ WhatsApp connecté");
+      connectedToWhatsapp = true;
     }
 
     if (connection === "close") {
-      const statusCode = lastDisconnect?.error?.output?.statusCode;
-      const shouldReconnect = statusCode !== 401 && statusCode !== 403;
-      console.log("Connexion fermée. Reconnexion :", shouldReconnect);
-      if (shouldReconnect) {
+      console.log("Connexion fermée. Reconnexion :", connectedToWhatsapp);
+      if (!connectedToWhatsapp) {
+        fs.rmSync("auth_info", { recursive: true, force: true });
         await demarrerBaileys();
       } else {
-        console.log(
-          "Échec d'authentification, veuillez rescanner le QR code manuellement."
-        );
+        console.log("❌ Auth échouée. Rescanner QR manuellement.");
       }
     }
   });
@@ -78,6 +80,7 @@ function genererOTP() {
 function genererSessionId() {
   return crypto.randomBytes(16).toString("hex");
 }
+
 app.get("/wake-up", async (req, res) => {
   return res.json({ text: "i am awake" });
 });
@@ -159,6 +162,21 @@ app.get("/welcome.html", authMiddleware, (req, res) => {
 
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+// Serve QR in browser
+app.get("/qr", async (req, res) => {
+  if (!latestQr || connectedToWhatsapp) return res.json({ qr: false });
+  const qrImage = await qrcode.toDataURL(latestQr);
+  return res.json({ qr: true, qrImage: qrImage });
+});
+
+app.get("/is-connected", async (req, res) => {
+  if (connectedToWhatsapp) {
+    res.json({ connected: true });
+  } else {
+    res.json({ connected: false });
+  }
 });
 
 app.listen(PORT, () =>

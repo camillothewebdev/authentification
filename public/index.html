@@ -1,69 +1,66 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
+    <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="style.css" />
-    <title>Authentification</title>
+    <title>Chargement...</title>
+    <style>
+      body {
+        margin: 0;
+        background: #0f0f0f;
+        color: white;
+        font-family: sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        flex-direction: column;
+      }
+      .loader {
+        border: 8px solid #333;
+        border-top: 8px solid #0af;
+        border-radius: 50%;
+        width: 70px;
+        height: 70px;
+        animation: spin 1s linear infinite;
+        margin-bottom: 20px;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
   </head>
   <body>
-    <h2>Numero whatsapp :</h2>
-    <div class="phone-input">
-      <span class="country-code">+243</span>
-      <input id="number" autocomplete="off" maxlength="9" type="tel" />
-    </div>
-
-    <button onclick="sendOTP()">Confirmer</button>
-    <a href="https://play.google.com/store/apps/details?id=com.whatsapp">
-      Je n'ai pas whatsapp
-    </a>
-    <br />
-    <div id="msg"></div>
-
+    <div id="loader" class="loader"></div>
+    <p id="titre" style="display: none">Scannez votre QR</p>
+    <p id="text">Chargement en cours...</p>
+    <img id="image" src="" width="246" alt="256" style="display: none" />
     <script>
-      function validateNumber(input) {
-        const val = input.trim();
-        const isNum = /^\d+$/.test(val);
-        if (!isNum || val.length < 9 || val.length > 9) {
-          return false;
-        }
-        return true;
-      }
-      async function sendOTP() {
-        const msg = document.getElementById("msg");
-        let number = document.getElementById("number").value.trim();
-        if (!number) {
-          msg.textContent = "Veuillez entrer votre numero whatsapp";
-          setTimeout(() => {
-            msg.textContent = "";
-          }, 3000);
-          return;
-        }
-        if (!validateNumber(number)) {
-          msg.textContent = "Le numero est incorrect, veuillez réessayer";
-          setTimeout(() => {
-            msg.textContent = "";
-          }, 3000);
-          return;
-        }
-
-        msg.textContent = "Veuillez patienter ...";
-        number = "243" + number;
-        const res = await fetch("/send-code", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ number }),
-        });
+      (async () => {
+        const res = await fetch("/qr");
         const data = await res.json();
-        if (data.success) {
-          window.location =
-            "./verification.html?number=" + encodeURIComponent(number);
-        } else {
-          msg.textContent = data.error;
-          setTimeout(() => {
-            msg.textContent = "";
-          }, 3000);
+        if (data.qr) {
+          loader.style.display = "none";
+          text.style.display = "none";
+          image.src = data.qrImage;
+          titre.style.display = "block";
+          image.style.display = "block";
         }
-      }
+        setInterval(() => {
+          (async () => {
+            const res2 = await fetch("/is-connected");
+            const data2 = await res2.json();
+            if (data2.connected) {
+              location = "./login.html";
+            }
+          })();
+        }, 1000);
+      })();
     </script>
   </body>
 </html>
