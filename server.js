@@ -138,7 +138,7 @@ app.get("/logout", (req, res) => {
   const sessionId = req.cookies.sessionId;
   if (sessionId) delete sessions[sessionId];
   res.clearCookie("sessionId");
-  res.redirect("/index.html");
+  res.redirect("/login.html");
 });
 
 function authMiddleware(req, res, next) {
@@ -147,7 +147,7 @@ function authMiddleware(req, res, next) {
     req.number = sessions[sessionId];
     next();
   } else {
-    res.redirect("/index.html");
+    res.redirect("/login.html");
   }
 }
 
