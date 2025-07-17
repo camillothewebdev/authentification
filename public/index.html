@@ -41,16 +41,20 @@
     <p id="text">Chargement en cours...</p>
     <img id="image" src="" width="246" alt="256" style="display: none" />
     <script>
-      (async () => {
-        const res = await fetch("/qr");
-        const data = await res.json();
-        if (data.qr) {
-          loader.style.display = "none";
-          text.style.display = "none";
-          image.src = data.qrImage;
-          titre.style.display = "block";
-          image.style.display = "block";
-        }
+      (() => {
+        setInterval(() => {
+          (async () => {
+            const res = await fetch("/qr");
+            const data = await res.json();
+            if (data.qr) {
+              loader.style.display = "none";
+              text.style.display = "none";
+              image.src = data.qrImage;
+              titre.style.display = "block";
+              image.style.display = "block";
+            }
+          })();
+        }, 1000);
         setInterval(() => {
           (async () => {
             const res2 = await fetch("/is-connected");
