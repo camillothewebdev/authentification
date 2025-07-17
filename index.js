@@ -109,6 +109,6 @@ app.get("/wake-up", (req, res) => {
   res.json({ awake: true });
 });
 
-//removeOldAuthFolder();
+removeOldAuthFolder();
 connectToWhatsAppAccount();
 app.listen(8080, () => console.log("🚀 Server running on port 8080"));
