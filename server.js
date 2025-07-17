@@ -129,10 +129,12 @@ app.post("/verify-code", (req, res) => {
 
   res.cookie("sessionId", sessionId, {
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000,
+    maxAge: 10 * 365 * 24 * 60 * 60 * 1000 // 10 years
+,
   });
   res.json({ success: true });
 });
+
 
 app.get("/logout", (req, res) => {
   const sessionId = req.cookies.sessionId;
