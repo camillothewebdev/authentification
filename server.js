@@ -3,12 +3,12 @@ const express = require("express");
 const cookieParser = require("cookie-parser");
 const path = require("path");
 const crypto = require("crypto");
+const fs = require("fs");
 const {
   default: makeWASocket,
   useMultiFileAuthState,
   fetchLatestBaileysVersion,
 } = require("@whiskeysockets/baileys");
-const fs = require("fs");
 
 const app = express();
 app.use(express.json());
@@ -49,7 +49,7 @@ async function demarrerBaileys() {
   sock.ev.on("connection.update", async (update) => {
     const { connection, lastDisconnect, qr } = update;
 
-    if (qr) {
+    if (qr && !connectedToWhatsapp && !latestQr) {
       latestQr = qr;
       console.log("Scannez ce QR code avec WhatsApp :");
       console.log(await qrcode.toString(qr, { small: true }));
@@ -58,11 +58,13 @@ async function demarrerBaileys() {
     if (connection === "open") {
       console.log("✅ WhatsApp connecté");
       connectedToWhatsapp = true;
+      latestQr = null;
     }
 
     if (connection === "close") {
       console.log("Connexion fermée. Reconnexion :", connectedToWhatsapp);
       if (!connectedToWhatsapp) {
+        fs.rmSync("auth_info", { recursive: true, force: true });
         await demarrerBaileys();
       } else {
         console.log("❌ Auth échouée. Rescanner QR manuellement.");
@@ -91,9 +93,7 @@ app.post("/send-code", async (req, res) => {
   try {
     const check = await sock.onWhatsApp(number + "@s.whatsapp.net");
     if (!check[0]?.exists) {
-      return res.json({
-        error: "Ce numéro n'est pas sur WhatsApp.",
-      });
+      return res.json({ error: "Ce numéro n'est pas sur WhatsApp." });
     }
 
     const otp = genererOTP();
@@ -163,7 +163,6 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// Serve QR in browser
 app.get("/qr", async (req, res) => {
   if (!latestQr || connectedToWhatsapp) return res.json({ qr: false });
   const qrImage = await qrcode.toDataURL(latestQr);
@@ -171,13 +170,9 @@ app.get("/qr", async (req, res) => {
 });
 
 app.get("/is-connected", async (req, res) => {
-  if (connectedToWhatsapp) {
-    res.json({ connected: true });
-  } else {
-    res.json({ connected: false });
-  }
+  res.json({ connected: connectedToWhatsapp });
 });
 
 app.listen(PORT, () =>
-  console.log(`Serveur lancé sur http://localhost:${PORT}`)
+  console.log(`🚀 Serveur lancé sur http://localhost:${PORT}`)
 );
