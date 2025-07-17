@@ -28,7 +28,7 @@ app.use((req, res, next) => {
     return res.redirect("/welcome.html");
   }
   if (!loggedIn && req.path == "/welcome.html") {
-    return res.redirect("/login.html");
+    return res.redirect("/index.html");
   }
   next();
 });
