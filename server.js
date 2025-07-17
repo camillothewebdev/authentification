@@ -99,10 +99,7 @@ app.post("/send-code", async (req, res) => {
     otpStore[number] = { otp, createdAt: Date.now() };
 
     await sock.sendMessage(number + "@s.whatsapp.net", {
-      text:
-        "```Congosoft```\n➖➖➖➖\n\nVotre code est : \n*" +
-        otp +
-        "*\n\n> Expire dans 2 minutes`",
+      text: "Votre code est : *" + otp + "*",
     });
     console.log(`OTP ${otp} envoyé à ${number}`);
     res.json({ success: true });
