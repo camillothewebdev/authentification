@@ -7,7 +7,7 @@ const qrcode = require("qrcode");
 const express = require("express");
 const cors = require("cors");
 const fs = require("fs-extra");
-const fetch = require("node-fetch"); // Add this
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 const app = express();
 app.use(cors({ origin: "*" }));
