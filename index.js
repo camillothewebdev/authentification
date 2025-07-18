@@ -109,7 +109,7 @@ removeOldAuthFolder();
 connectToWhatsAppAccount();
 
 setInterval(() => {
-  fetch("http://localhost:8080/wake-up").catch(() => {});
+  fetch("https://congosoft-auth.onrender.com/wake-up").catch(() => {});
 }, 5 * 60 * 1000); // Ping every 5 minutes
 
 app.listen(8080, () => console.log("🚀 Server running on port 8080"));
