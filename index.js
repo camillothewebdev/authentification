@@ -7,6 +7,7 @@ const qrcode = require("qrcode");
 const express = require("express");
 const cors = require("cors");
 const fs = require("fs-extra");
+const fetch = require("node-fetch"); // Add this
 
 const app = express();
 app.use(cors({ origin: "*" }));
@@ -16,8 +17,6 @@ let sock;
 let loginQR = null;
 let connected = false;
 const verificationList = [];
-
-
 
 async function connectToWhatsAppAccount() {
   const { state, saveCreds: save } = await useMultiFileAuthState("auth_info");
@@ -29,10 +28,10 @@ async function connectToWhatsAppAccount() {
 
 function handleConnectionUpdate({ connection, qr }) {
   if (qr) {
-   qrcode.toDataURL(qr).then(url => {
-    loginQR = url;
-  });
-   console.log("🔒 Scan the QR")
+    qrcode.toDataURL(qr).then(url => {
+      loginQR = url;
+    });
+    console.log("🔒 Scan the QR");
   }
 
   if (connection === "open") {
@@ -60,14 +59,17 @@ app.post("/send-code", async (req, res) => {
       success: false,
       error: "Ce numero n'est pas sur Whatsapp",
     });
+
   const otp = Math.floor(1000 + Math.random() * 9000);
-  verificationList.unshift({ number: req.body.number, otp: otp, expired : false });
+  verificationList.unshift({ number: req.body.number, otp: otp, expired: false });
+
   setTimeout(() => {
     const index = verificationList.findIndex(
-      (verification) => verification.number === req.body.number && verification.otp === otp
+      (v) => v.number === req.body.number && v.otp === otp
     );
     if (index !== -1) verificationList[index].expired = true;
   }, 2 * 60 * 1000);
+
   await sock.sendMessage(jid, { text: `Votre code est : *${otp}*` });
   console.log("📩 Message sent");
   res.json({ success: true });
@@ -75,34 +77,28 @@ app.post("/send-code", async (req, res) => {
 
 app.post("/verify-code", (req, res) => {
   const { number, otp } = req.body;
-  const verificationIndex = verificationList.findIndex(
-    (verification) => verification.number === number
-  );
+  const index = verificationList.findIndex((v) => v.number === number);
 
-  if (verificationIndex === -1)
-    return res.json({ success: false, error: "Code non envoyé" });
-  verificationList[verificationIndex];
-  if (verificationList[verificationIndex].otp == otp) {
-    if(verificationList[verificationIndex].expired == true){
-        res.json({ success: false, message: "Le code a expiré" });
-    }else{
+  if (index === -1) return res.json({ success: false, error: "Code non envoyé" });
+
+  if (verificationList[index].otp == otp) {
+    if (verificationList[index].expired) {
+      res.json({ success: false, message: "Le code a expiré" });
+    } else {
       res.json({ success: true, message: "Le code est correct" });
     }
-  } else{
+  } else {
     res.json({ success: false, message: "Le code est incorrect" });
   }
 });
 
 app.get("/get-login-qr", (req, res) => {
-  if (loginQR) {
-    res.json({ success: true, qr:loginQR });
-  }else{
-    res.json({success:false})
-  }
+  if (loginQR) res.json({ success: true, qr: loginQR });
+  else res.json({ success: false });
 });
 
 app.get("/connected", (req, res) => {
-  res.json({connected : connected})
+  res.json({ connected: connected });
 });
 
 app.get("/wake-up", (req, res) => {
@@ -111,4 +107,9 @@ app.get("/wake-up", (req, res) => {
 
 removeOldAuthFolder();
 connectToWhatsAppAccount();
+
+setInterval(() => {
+  fetch("http://localhost:8080/wake-up").catch(() => {});
+}, 5 * 60 * 1000); // Ping every 5 minutes
+
 app.listen(8080, () => console.log("🚀 Server running on port 8080"));
